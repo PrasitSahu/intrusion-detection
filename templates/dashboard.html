@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Dashboard - IDS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="logo-container">
+            <div class="logo-icon" style="background: var(--safe-green);">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </div>
+            <span>IDS Platform</span>
+        </div>
+        
+        <div class="nav-section">MAIN MENU</div>
+        <ul class="nav-menu">
+            <li>
+                <a href="/dashboard" class="nav-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    Security Dashboard
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Security Dashboard <span class="live-badge">LIVE</span></h1>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Live monitoring and metrics of intercepted network traffic.</p>
+            </div>
+        </div>
+
+        <h2 class="section-title">Traffic Metrics</h2>
+        <div class="metrics-grid">
+            
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Total Packets</span>
+                    <div class="card-icon" style="background: #eff6ff; color: #3b82f6;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg></div>
+                </div>
+                <div class="card-value" id="stat-total">0</div>
+                <p class="card-desc">Total number of traffic requests processed by the model since initialization.</p>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Attacks Detected</span>
+                    <div class="card-icon" style="background: #fef2f2; color: #ef4444;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>
+                </div>
+                <div class="card-value" id="stat-attacks" style="color: var(--danger-red);">0</div>
+                <p class="card-desc">Malicious requests correctly identified and flagged by the Random Forest classifier.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Normal Traffic</span>
+                    <div class="card-icon" style="background: #ecfdf5; color: #10b981;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+                </div>
+                <div class="card-value" id="stat-normals" style="color: var(--safe-green);">0</div>
+                <p class="card-desc">Legitimate network packets allowed through the system without raising alerts.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Live Accuracy</span>
+                    <div class="card-icon" style="background: #fdf4ff; color: #d946ef;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg></div>
+                </div>
+                <div class="card-value" id="stat-accuracy">0%</div>
+                <p class="card-desc">The real-time correctness of the AI's predictions based on the simulated ground truth.</p>
+            </div>
+            
+        </div>
+
+        <h2 class="section-title">Recent Network Logs</h2>
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Log ID</th>
+                        <th>Timestamp</th>
+                        <th>True Traffic Type</th>
+                        <th>AI Prediction</th>
+                        <th>Attack Type</th>
+                        <th>Verdict</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-table-body">
+                    <tr><td colspan="6" style="text-align: center; padding: 3rem; color: var(--text-muted);">Loading live traffic logs...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Simulation Panel (Bottom Right) -->
+    <div id="sim-panel" class="simulation-panel">
+        <div class="sim-header">
+            <h3>Traffic Emulator</h3>
+            <button id="btn-toggle-sim" class="sim-toggle" title="Hide panel">_</button>
+        </div>
+        <div class="sim-body">
+            <button id="btn-normal" class="btn btn-normal">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                Send Normal Packet
+            </button>
+            <button id="btn-attack" class="btn btn-attack">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                Launch Attack
+            </button>
+        </div>
+    </div>
+    <button id="btn-show-sim" class="sim-reopen" style="display:none;" title="Show emulator">+</button>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">Packet sent successfully</div>
+
+    <script>
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            if (isError) {
+                toast.style.background = 'var(--danger-red)';
+            } else {
+                toast.style.background = '#1e293b';
+            }
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        async function fireTraffic(type) {
+            const btn = document.getElementById(`btn-${type}`);
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Sending...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/send_traffic', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type })
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    showToast(`Successfully fired ${data.type_sent.toUpperCase()} traffic.`);
+                    fetchStats(); // Update dashboard immediately
+                } else {
+                    showToast(data.message, true);
+                }
+            } catch (e) {
+                showToast('Failed to connect to target server', true);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        document.getElementById('btn-normal').addEventListener('click', () => fireTraffic('normal'));
+        document.getElementById('btn-attack').addEventListener('click', () => fireTraffic('attack'));
+
+        async function fetchStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                
+                document.getElementById('stat-total').textContent = data.total_requests;
+                document.getElementById('stat-attacks').textContent = data.total_attacks;
+                document.getElementById('stat-normals').textContent = data.total_normals;
+                document.getElementById('stat-accuracy').textContent = data.accuracy + '%';
+                
+                const tbody = document.getElementById('logs-table-body');
+                tbody.innerHTML = '';
+                
+                if (data.recent_logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 3rem; color: var(--text-muted);">No traffic logged yet. Use the emulator to send packets!</td></tr>';
+                    return;
+                }
+
+                data.recent_logs.forEach(log => {
+                    const tr = document.createElement('tr');
+                    
+                    const trueClass = log.true_label === 'attack' ? 'attack' : 'normal';
+                    const predClass = log.predicted_label === 'attack' ? 'attack' : 'normal';
+                    const verdictClass = log.is_correct ? 'correct' : 'wrong';
+                    const verdictIcon = log.is_correct ? 'Match' : 'Miss';
+
+                    tr.innerHTML = `
+                        <td style="color: var(--text-muted); font-family: var(--font-mono); font-size: 0.85rem;">#${log.id}</td>
+                        <td style="color: var(--text-muted);">${log.timestamp}</td>
+                        <td><span class="badge ${trueClass}">${log.true_label}</span></td>
+                        <td><span class="badge ${predClass}">${log.predicted_label}</span></td>
+                        <td style="color: var(--text-muted); font-size: 0.85rem;">${log.attack_type || '-'}</td>
+                        <td><span class="badge ${verdictClass}">${verdictIcon}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error("Failed to fetch stats", error);
+                // Don't stop polling — retry on next interval
+            }
+        }
+
+        // Simulation panel toggle
+        function updateSimPanel(hidden) {
+            const panel = document.getElementById('sim-panel');
+            const reopen = document.getElementById('btn-show-sim');
+            if (hidden) {
+                panel.classList.add('hidden');
+                reopen.style.display = 'flex';
+            } else {
+                panel.classList.remove('hidden');
+                reopen.style.display = 'none';
+            }
+            localStorage.setItem('sim_panel_hidden', hidden ? '1' : '0');
+        }
+
+        document.getElementById('btn-toggle-sim').addEventListener('click', () => updateSimPanel(true));
+        document.getElementById('btn-show-sim').addEventListener('click', () => updateSimPanel(false));
+
+        if (localStorage.getItem('sim_panel_hidden') === '1') {
+            updateSimPanel(true);
+        }
+
+        fetchStats();
+        setInterval(fetchStats, 1000);
+    </script>
+</body>
+</html>

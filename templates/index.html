@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Overview - IDS Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <!-- Main Content -->
+    <main class="main-content" style="margin-left: 0; max-width: 1200px; margin: 0 auto;">
+        <div class="page-header" style="align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem;">
+            <div>
+                <h1 class="page-title">Network Intrusion Detection System</h1>
+                <p style="color: var(--text-muted); font-size: 1rem; margin-top: 0.5rem;">AI-Powered traffic analysis engine.</p>
+            </div>
+            <a href="/dashboard" class="btn" style="background: var(--accent-blue); color: white; text-decoration: none; max-width: 250px;">
+                Open Security Dashboard →
+            </a>
+        </div>
+
+        <h2 class="section-title">Model Architecture & Dataset</h2>
+        <div class="metrics-grid">
+            
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Algorithm</span>
+                    <div class="card-icon" style="background: #eff6ff; color: #3b82f6;">⚡</div>
+                </div>
+                <div class="card-value">XGBoost (GPU)</div>
+                <p class="card-desc">A gradient-boosted decision tree ensemble with 5000 trees (max depth 10), GPU-accelerated training and inference. Ultra-low threshold (0.001) catches 89.6% of attacks while maintaining a low false alarm rate.</p>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Dataset Used</span>
+                    <div class="card-icon" style="background: #fdf4ff; color: #d946ef;">📊</div>
+                </div>
+                <div class="card-value">NSL-KDD</div>
+                <p class="card-desc">Trained on the benchmark NSL-KDD dataset. It evaluates 41 independent network packet features (e.g., protocol_type, src_bytes, failed_logins) to classify behavior.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Test Accuracy</span>
+                    <div class="card-icon" style="background: #ecfdf5; color: #10b981;">🎯</div>
+                </div>
+                <div class="card-value">90.6%</div>
+                <p class="card-desc">Achieved 90.57% accuracy on the NSL-KDD test set. Catches 89.6% of attacks with only 8.2% false alarms using an ultra-low decision threshold of 0.001.</p>
+            </div>
+            
+        </div>
+
+        <h2 class="section-title">Preprocessing Pipeline</h2>
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="architecture-box">
+                // Pipeline Steps:
+                1. Data Ingestion: Raw packet features received via REST API.
+                2. Feature Engineering: 17 derived features added (ratios, interactions, scores).
+                3. Categorical Encoding: 'protocol_type', 'service', 'flag', 'protocol_service', 'protocol_flag' → One-Hot Encoding (~220 features).
+                4. Feature Alignment: Re-indexed against training columns (missing columns zeroed out).
+                5. Binary Inference: XGBoost GPU with threshold=0.001 → 'normal' or 'attack'.
+                6. Attack Type: Multi-class XGBoost GPU classifies into DoS/Probe/R2L/U2R.
+            </div>
+            <p class="card-desc">All incoming requests are scrubbed and aligned with the exact feature matrix shape that the model expects, ensuring seamless deployment and preventing input errors.</p>
+        </div>
+    </main>
+
+    <!-- Simulation Panel (Bottom Right) -->
+    <div id="sim-panel" class="simulation-panel">
+        <div class="sim-header">
+            <h3>Traffic Emulator</h3>
+            <button id="btn-toggle-sim" class="sim-toggle" title="Hide panel">_</button>
+        </div>
+        <div class="sim-body">
+            <button id="btn-normal" class="btn btn-normal">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                Send Normal Packet
+            </button>
+            <button id="btn-attack" class="btn btn-attack">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                Launch Attack
+            </button>
+        </div>
+    </div>
+    <button id="btn-show-sim" class="sim-reopen" style="display:none;" title="Show emulator">+</button>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">Packet sent successfully</div>
+
+    <script>
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            if (isError) {
+                toast.style.background = 'var(--danger-red)';
+            } else {
+                toast.style.background = '#1e293b';
+            }
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        async function fireTraffic(type) {
+            const btn = document.getElementById(`btn-${type}`);
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Sending...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/send_traffic', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type })
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    showToast(`Successfully fired ${data.type_sent.toUpperCase()} traffic.`);
+                } else {
+                    showToast(data.message, true);
+                }
+            } catch (e) {
+                showToast('Failed to connect to target server', true);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        document.getElementById('btn-normal').addEventListener('click', () => fireTraffic('normal'));
+        document.getElementById('btn-attack').addEventListener('click', () => fireTraffic('attack'));
+
+        // Simulation panel toggle
+        function updateSimPanel(hidden) {
+            const panel = document.getElementById('sim-panel');
+            const reopen = document.getElementById('btn-show-sim');
+            if (hidden) {
+                panel.classList.add('hidden');
+                reopen.style.display = 'flex';
+            } else {
+                panel.classList.remove('hidden');
+                reopen.style.display = 'none';
+            }
+            localStorage.setItem('sim_panel_hidden', hidden ? '1' : '0');
+        }
+        document.getElementById('btn-toggle-sim').addEventListener('click', () => updateSimPanel(true));
+        document.getElementById('btn-show-sim').addEventListener('click', () => updateSimPanel(false));
+        if (localStorage.getItem('sim_panel_hidden') === '1') updateSimPanel(true);
+    </script>
+</body>
+</html>
